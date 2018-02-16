@@ -1,0 +1,70 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+Read in OHI data and map country codes onto countries
+```{r}
+library(tidyverse)
+library(plotly)
+df <- read.csv('https://raw.githubusercontent.com/OHI-Science/ohi-global/draft/global2017/OHI_final_formatted_scores_2017-11-22.csv')
+
+#ohi_countries <- df %>% distinct(region_name) %>% mutate(region_name = toupper(region_name))
+
+```
+
+Scrape Alpha-3 codes from Wikipeida for plotly
+```{r}
+library(rvest)
+http <- "https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3"
+
+region_name <- read_html(http) %>% html_nodes("td a") %>% html_text()
+region_name <- region_name[1:249]
+
+a3 <- data_frame( region_name = region_name,
+                  a3_code = read_html(http) %>% html_nodes("td .monospaced") %>% html_text() )
+```
+
+
+
+test
+```{r}
+df %>% filter(goal == "AO" & dimension == "future") -> df_test
+left_join(df_test, a3, by = "region_name") -> df_test
+```
+
+
+
+```{r}
+# light grey boundaries
+l <- list(color = toRGB("grey"), width = 0.5)
+
+# specify map projection/options
+g <- list(
+  showframe = FALSE,
+  showcoastlines = FALSE,
+  projection = list(type = 'Mercator')
+)
+
+#df_test %>% filter(!is.na(code)) -> df_test
+p <- plot_geo(df_test) %>%
+  add_trace(
+    z = ~value, color = ~value, colors = 'Blues',
+    frame = ~scenario,
+    text = ~region_name, locations = ~a3_code, marker = list(line = l)
+  ) %>%
+  colorbar(title = 'OHI score', tickprefix = '') %>%
+  layout(
+    title = '2014 Global GDP<br>Source:<a href="https://www.cia.gov/library/publications/the-world-factbook/fields/2195.html">CIA World Factbook</a>',
+    geo = g
+  )
+
+p %>% animation_button(
+    x = 1, xanchor = "right", y = 0, yanchor = "bottom"
+  ) -> p
+
+p
+
+#d <- read.csv('https://raw.githubusercontent.com/plotly/datasets/master/2014_world_gdp_with_codes.csv')
+```
+
