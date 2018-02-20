@@ -1,0 +1,67 @@
+---
+title: "OHI linear model fitting"
+output: html_notebook
+author: Rich Pauloo
+---
+
+Bring in OHI data, generate a linear model for each group of goal, dimension, and region_name.  
+```{r}
+library(tidyverse)
+library(broom)
+
+dat <- read_csv("/Users/richpauloo/Documents/GitHub/ohi/ohi_dat_clean.csv") 
+
+# generate the linear models
+dat_lm <- dat %>% 
+  filter(!is.na(value)) %>% 
+  group_by(goal, dimension, region_name) %>% 
+  do(tidy(lm(value ~ scenario, data = .)))
+
+# get distinct a3 codes and region names for joining
+dat_join <- dat %>% select(a3_code, region_name) %>% distinct()
+
+# join wtih fixed a3 country codes by region name save linear model results
+dat_lm %>% 
+  filter(term == "scenario") %>% 
+  select(goal, dimension, region_name, estimate) %>% 
+    mutate(estimate_cat = if ( estimate == 0 ) {
+                        "" # same
+                        } else if ( estimate > 0 ) {
+                        " " # better
+                        } else if ( estimate < 0 ) {
+                        "  " # worse
+                        } else ( NULL ) ) %>%  
+  left_join(a3_fixed, by = 'region_name') %>% 
+  write_csv("dat_modeled.csv")
+```
+
+
+Verify it works on a subset of the data.
+```{r}
+dat_lm %>% filter(term =="scenario") %>% 
+  left_join(dat_join, by = 'region_name') %>% 
+  filter(goal == "AO", dimension == "future") %>% 
+  mutate(estimate_cat = if ( estimate == 0 ) {
+                        "" 
+                        } else if ( estimate > 0 ) {
+                        " " 
+                        } else if ( estimate < 0 ) {
+                        "  "
+                        } else ( NULL ) ) %>% 
+
+    plot_geo() %>% 
+      add_trace(
+        z = ~estimate, 
+        zmin = -3,
+        zmax = 3,
+        color = ~estimate_cat, colorscale = list(c(-1, 'rgb(0,0,255)'), c(0, 'rgb(0,0,0)'), c(1, 'rgb(255,0,0)')),
+        reversescale = TRUE,
+        #frame = ~scenario,
+        text = ~region_name, locations = ~a3_code, marker = list(line = l)
+      ) %>%
+      colorbar(title = 'Value', tickprefix = '') %>%
+      layout(
+        title = "",
+        geo = g)
+
+```

@@ -1,0 +1,92 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+Read in OHI data, and save it in CSV for easy retrieval.
+```{r}
+library(tidyverse)
+library(plotly)
+df <- read.csv('https://raw.githubusercontent.com/OHI-Science/ohi-global/draft/global2017/OHI_final_formatted_scores_2017-11-22.csv')
+
+df %>% write_csv("/Users/richpauloo/Documents/GitHub/ohi/ohi_dat.csv")
+```
+
+Scrape Alpha-3 codes from Wikipeida for plotly (plotly_geo takes a3 codes in its `locations` argument).
+```{r}
+library(rvest)
+http <- "https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3"
+
+region_name <- read_html(http) %>% html_nodes("td a") %>% html_text()
+region_name <- region_name[1:249]
+
+a3 <- data_frame( region_name = region_name,
+                  a3_code = read_html(http) %>% html_nodes("td .monospaced") %>% html_text() )
+
+```
+
+Join a3 with the OHI data by region_name, and write these a3 codes to a CSV to:  
+
+1. get a temporaty version of the data that can be used to inform the development of the app.  
+2. make a template of country names that need to be manually changed  
+
+```{r}
+# write some temporary dat to play with the app before cleaning all of the a3 codes
+left_join(df, a3) %>% write_csv("/Users/richpauloo/Documents/GitHub/ohi/ohi_dat_temp.csv")
+
+# write the data frame of a3 codes to fix
+left_join(df, a3) %>% 
+  select(region_name, a3_code) %>% 
+  distinct() %>% 
+  mutate(fix = ifelse( is.na(a3_code), TRUE, "")) %>% 
+  write_csv("a3_codes_fix.csv")
+
+# write the data frame of a3 codes from wikipedia to use for fixing
+a3 %>% write_csv("a3_codes_wikipeida.csv")
+```
+
+Read back in the fixed codes, append to the data for use in the final app, export the fixed data.  
+```{r}
+a3_fixed <- read_csv("/Users/richpauloo/Documents/GitHub/ohi/a3_codes_fixed.csv") %>% select(-fix)
+
+# export fixed data with updated a3 codes
+left_join(df, a3_fixed) %>% select(-region_id) %>% write_csv("/Users/richpauloo/Documents/GitHub/ohi/ohi_dat_clean.csv")
+
+# export fixed 5 year change data with upated a3 codes in `lm_ohi.Rmd`
+```
+
+
+Test plot to verfiy that the a3 codes work.
+```{r}
+# light grey boundaries
+l <- list(color = toRGB("grey"), width = 0.5)
+
+# specify map projection/options
+g <- list(
+  showframe = FALSE,
+  showcoastlines = FALSE,
+  projection = list(type = 'Mercator')
+)
+
+# filter down to a grouped goal and dimension to plot
+df %>% filter(goal == "AO" & dimension == "future") -> df_test
+left_join(df_test, a3, by = "region_name") -> df_test
+
+p <- plot_geo(df_test) %>%
+  add_trace(
+    z = ~value, color = ~value, colors = 'Blues',
+    frame = ~scenario,
+    text = ~region_name, locations = ~a3_code, marker = list(line = l)
+  ) %>%
+  colorbar(title = 'OHI score', tickprefix = '') %>%
+  layout(
+    title = '2014 Global GDP<br>Source:<a href="https://www.cia.gov/library/publications/the-world-factbook/fields/2195.html">CIA World Factbook</a>',
+    geo = g) %>% 
+  
+  animation_button(
+    x = 1, xanchor = "right", y = 0, yanchor = "bottom")
+
+p
+```
+
+
