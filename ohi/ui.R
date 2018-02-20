@@ -131,7 +131,7 @@ ui <-
                                      downloadButton("download_all_data", "Download All Data")))
                         )),
                tabPanel(title = "About", 
-                        includeMarkdown("/Users/richpauloo/Documents/GitHub/ohi/about.md"))
+                        includeMarkdown("about.md"))
                )
         )
       )

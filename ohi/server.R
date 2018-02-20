@@ -1,30 +1,30 @@
-library(plotly)
-library(shinydashboard)
-library(shinyjs)
-library(tidyverse)
-library(RColorBrewer)
-library(DT)
-library(shiny)
+# library(plotly)
+# library(shinydashboard)
+# library(shinyjs)
+# library(tidyverse)
+# library(RColorBrewer)
+# library(DT)
+# library(shiny)
+# 
+# # load data
+# dat <- read_csv("ohi_dat_clean.csv") # change file path beore uploading to Shiny
+# 
+# # load modeled data
+# dat_mod <- read_csv("dat_modeled.csv")
+# 
+# # find min/max for slider
+# #dat %>% group_by(dimension) %>% filter(!is.na(value)) %>% dplyr::summarise(min = min(value), max = max(value)) %>% write_csv("slider.csv")
+# slider <- read_csv("slider.csv")
 
-# load data
-dat <- read_csv("/Users/richpauloo/Documents/GitHub/ohi/ohi_dat_clean.csv") # change file path beore uploading to Shiny
-
-# load modeled data
-dat_mod <- read_csv("/Users/richpauloo/Documents/GitHub/ohi/dat_modeled.csv")
-
-# find min/max for slider
-#dat %>% group_by(dimension) %>% filter(!is.na(value)) %>% dplyr::summarise(min = min(value), max = max(value)) %>% write_csv("slider.csv")
-slider <- read_csv("/Users/richpauloo/Documents/GitHub/ohi/slider.csv")
-
-# light grey boundaries
-l <- list(color = toRGB("grey"), width = 0.5)
-
-# specify map projection/options
-g <- list(
-  showframe = FALSE,
-  showcoastlines = FALSE,
-  projection = list(type = 'Mercator')
-)
+# # light grey boundaries
+# l <- list(color = toRGB("grey"), width = 0.5)
+# 
+# # specify map projection/options
+# g <- list(
+#   showframe = FALSE,
+#   showcoastlines = FALSE,
+#   projection = list(type = 'Mercator')
+# )
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
@@ -157,7 +157,7 @@ server <- function(input, output, session) {
   output$download_all_data <- downloadHandler(
     # This function returns a string which tells the client browser what name to use when saving the file.
     filename = function() {
-      paste0("all_TDS_dat", ".csv")
+      paste0("all_ohi_dat", ".csv")
     },
     
     # This function should write data to a file given to it by the argument 'file'.
